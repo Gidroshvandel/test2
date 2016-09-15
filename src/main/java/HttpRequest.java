@@ -1,53 +1,54 @@
+import org.apache.http.HttpResponse;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HTTP;
+
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.apache.http.protocol.HTTP.USER_AGENT;
 
 public class HttpRequest {
-    public static String executePost(String targetURL, String urlParameters) {
-        HttpURLConnection connection = null;
+
+    public static String sendPost(String targetURL, List<BasicNameValuePair> urlParameters)  {
 
         try {
-            //Create connection
-            URL url = new URL(targetURL);
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type",
-                    "application/json");
+            DefaultHttpClient client = new DefaultHttpClient();
+            HttpPost post = new HttpPost(targetURL);
 
-            connection.setRequestProperty("Content-Length",
-                    Integer.toString(urlParameters.getBytes().length));
-            connection.setRequestProperty("Content-Language", "en-US");
+            // add header
+            post.setHeader("User-Agent", USER_AGENT);
 
-            connection.setUseCaches(false);
-            connection.setDoOutput(true);
+            post.setEntity(new UrlEncodedFormEntity(urlParameters, "UTF-8"));
 
-            //Send request
-            DataOutputStream wr = new DataOutputStream (
-                    connection.getOutputStream());
-            wr.writeBytes(urlParameters);
-            wr.close();
+            HttpResponse response = client.execute(post);
+            System.out.println("\nSending 'POST' request to URL : " + targetURL);
+            System.out.println("Post parameters : " + post.getEntity());
+            System.out.println("Response Code : " +
+                    response.getStatusLine().getStatusCode());
 
-            //Get Response
-            InputStream is = connection.getInputStream();
-            BufferedReader rd = new BufferedReader(new InputStreamReader(is));
-            StringBuilder response = new StringBuilder(); // or StringBuffer if Java version 5+
-            String line;
+            BufferedReader rd = new BufferedReader(
+                    new InputStreamReader(response.getEntity().getContent()));
+
+            StringBuffer result = new StringBuffer();
+            String line = "";
             while ((line = rd.readLine()) != null) {
-                response.append(line);
-                response.append('\r');
+                result.append(line);
             }
-            rd.close();
-            return response.toString();
-        } catch (Exception e) {
+
+            return result.toString();
+        }catch (Exception e) {
             e.printStackTrace();
             return null;
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
         }
+
+
+
     }
 }
